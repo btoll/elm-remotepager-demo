@@ -1,7 +1,7 @@
-module Request.Hacker exposing (delete, list, post, put)
+module Request.Hacker exposing (delete, list, page, post, put)
 
 import Http
-import Data.Hacker exposing (Hacker, decoder, encoder, manyDecoder, succeed)
+import Data.Hacker exposing (Hacker, HackerWithPager, decoder, encoder, manyDecoder, pagingDecoder, succeed)
 
 
 
@@ -27,6 +27,11 @@ get method =
 list : Http.Request ( List Hacker )
 list =
     "list" |> get
+
+
+page : Int -> Http.Request HackerWithPager
+page page =
+    pagingDecoder |> Http.get ( (++) "http://127.0.0.1:8080/elm-remotepager-demo/hacker/list/" ( page |> toString ) )
 
 
 post : String -> Hacker -> Http.Request Hacker
