@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Data.Hacker exposing (Hacker, HackerWithPager, new)
 import Data.Pager exposing (Pager)
-import Html exposing (Html, div, h1, li, section, span, text, ul)
+import Html exposing (Html, button, div, h1, li, section, span, text, ul)
 import Http
 import Request.Hacker
 import Views.Form as Form
@@ -83,13 +83,16 @@ drawView model =
             else
                 div [] []
     in
-    [ showPager
+    [ button [] [ "Add Hacker" |> text ]
+    , showPager
     , model.hackers
         |> List.map
             ( \hacker ->
                 li []
                     [ span [] [ hacker.id |> toString |> text ]
                     , span [] [ hacker.name |> text ]
+                    , button [] [ "Edit" |> text ]
+                    , button [] [ "Delete" |> text ]
                     ]
             )
         |> ul []

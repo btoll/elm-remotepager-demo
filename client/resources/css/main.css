@@ -1,0 +1,18 @@
+li {
+    list-style: none;
+    margin-bottom: 10px;
+}
+
+li span {
+    display: inline-block;
+    width: 30px;
+}
+
+li > span + span {
+    width: 180px;
+}
+
+button {
+    margin: 0 10px;
+}
+
