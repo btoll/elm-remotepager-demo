@@ -57,6 +57,19 @@ func (c *HackerController) List(ctx *app.ListHackerContext) error {
 	// HackerController_List: end_implement
 }
 
+// Page runs the page action.
+func (c *HackerController) Page(ctx *app.PageHackerContext) error {
+	// HackerController_Page: start_implement
+
+	collection, err := sql.Page(sql.NewHacker(ctx.Page))
+	if err != nil {
+		return err
+	}
+	return ctx.OKPaging(collection.(*app.HackerMediaPaging))
+
+	// HackerController_Page: end_implement
+}
+
 // Show runs the show action.
 func (c *HackerController) Show(ctx *app.ShowHackerContext) error {
 	// HackerController_Show: start_implement

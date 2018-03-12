@@ -3,6 +3,7 @@ package sql
 import (
 	mysql "database/sql"
 	"fmt"
+	"math"
 
 	"github.com/btoll/elm-remotepager-demo/server/app"
 )
@@ -123,53 +124,53 @@ func (s *Hacker) List(db *mysql.DB) (interface{}, error) {
 }
 
 func (s *Hacker) Page(db *mysql.DB) (interface{}, error) {
-	//	// page * recordsPerPage = limit
-	//	recordsPerPage := 50
-	//	limit := s.Data.(int) * recordsPerPage
-	//	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", "", ""))
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	var totalCount int
-	//	for rows.Next() {
-	//		err = rows.Scan(&totalCount)
-	//		if err != nil {
-	//			return nil, err
-	//		}
-	//	}
-	//	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", "", fmt.Sprintf("LIMIT %d,%d", limit, recordsPerPage)))
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	// Only the amount of rows equal to recordsPerPage unless the last page has been requested
-	//	// (determined by `totalCount - limit`).
-	//	capacity := totalCount - limit
-	//	if capacity >= recordsPerPage {
-	//		capacity = recordsPerPage
-	//	}
-	//	paging := &app.HackerMediaPaging{
-	//		Pager: &app.Pager{
-	//			CurrentPage:    limit / recordsPerPage,
-	//			RecordsPerPage: recordsPerPage,
-	//			TotalCount:     totalCount,
-	//			TotalPages:     int(math.Ceil(float64(totalCount) / float64(recordsPerPage))),
-	//		},
-	//		Users: make([]*app.HackerItem, capacity),
-	//	}
-	//	i := 0
-	//	for rows.Next() {
-	//		var id int
-	//		var name string
-	//		err = rows.Scan(&id, &name)
-	//		if err != nil {
-	//			return nil, err
-	//		}
-	//		paging.Users[i] = &app.HackerItem{
-	//			ID:   id,
-	//			Name: name,
-	//		}
-	//		i++
-	//	}
-	//	return paging, nil
-	return nil, nil
+	// page * recordsPerPage = limit
+	fmt.Println("got here")
+	recordsPerPage := 10
+	limit := s.Data.(int) * recordsPerPage
+	rows, err := db.Query(fmt.Sprintf(s.Stmt["SELECT"], "COUNT(*)", "", ""))
+	if err != nil {
+		return nil, err
+	}
+	var totalCount int
+	for rows.Next() {
+		err = rows.Scan(&totalCount)
+		if err != nil {
+			return nil, err
+		}
+	}
+	rows, err = db.Query(fmt.Sprintf(s.Stmt["SELECT"], "*", "", fmt.Sprintf("LIMIT %d,%d", limit, recordsPerPage)))
+	if err != nil {
+		return nil, err
+	}
+	// Only the amount of rows equal to recordsPerPage unless the last page has been requested
+	// (determined by `totalCount - limit`).
+	capacity := totalCount - limit
+	if capacity >= recordsPerPage {
+		capacity = recordsPerPage
+	}
+	paging := &app.HackerMediaPaging{
+		Pager: &app.Pager{
+			CurrentPage:    limit / recordsPerPage,
+			RecordsPerPage: recordsPerPage,
+			TotalCount:     totalCount,
+			TotalPages:     int(math.Ceil(float64(totalCount) / float64(recordsPerPage))),
+		},
+		Hackers: make([]*app.HackerItem, capacity),
+	}
+	i := 0
+	for rows.Next() {
+		var id int
+		var name string
+		err = rows.Scan(&id, &name)
+		if err != nil {
+			return nil, err
+		}
+		paging.Hackers[i] = &app.HackerItem{
+			ID:   id,
+			Name: name,
+		}
+		i++
+	}
+	return paging, nil
 }

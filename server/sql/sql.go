@@ -83,15 +83,14 @@ func List(s Lister) (interface{}, error) {
 }
 
 func Page(p Pager) (interface{}, error) {
-	//	db, err := connect()
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	coll, err := p.Page(db)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	cleanup(db)
-	//	return coll, nil
-	return nil, nil
+	db, err := connect()
+	if err != nil {
+		return nil, err
+	}
+	coll, err := p.Page(db)
+	if err != nil {
+		return nil, err
+	}
+	cleanup(db)
+	return coll, nil
 }

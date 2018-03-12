@@ -60,6 +60,18 @@ var _ = Resource("Hacker", func() {
 		Response(OK, CollectionOf(HackerMedia))
 		Response(BadRequest, ErrorMedia)
 	})
+
+	Action("page", func() {
+		Routing(GET("/list/:page"))
+		Params(func() {
+			Param("page", Integer, "Given a page number, returns an object consisting of the slice of hackers and a pager object")
+		})
+		Description("Get a page of hackers")
+		Response(OK, func() {
+			Status(200)
+			Media(HackerMedia, "paging")
+		})
+	})
 })
 
 var HackerPayload = Type("HackerPayload", func() {
@@ -77,6 +89,15 @@ var HackerPayload = Type("HackerPayload", func() {
 	Required("name")
 })
 
+var HackerItem = Type("hackerItem", func() {
+	Reference(HackerPayload)
+
+	Attribute("id")
+	Attribute("name")
+
+	Required("id", "name")
+})
+
 var HackerMedia = MediaType("application/hackerapi.hackerentity", func() {
 	Description("Hacker response")
 	TypeName("HackerMedia")
@@ -86,8 +107,10 @@ var HackerMedia = MediaType("application/hackerapi.hackerentity", func() {
 	Attributes(func() {
 		Attribute("id")
 		Attribute("name")
+		Attribute("hackers", ArrayOf("hackerItem"))
+		Attribute("pager", Pager)
 
-		Required("id", "name")
+		Required("id", "name", "hackers", "pager")
 	})
 
 	View("default", func() {
@@ -97,6 +120,7 @@ var HackerMedia = MediaType("application/hackerapi.hackerentity", func() {
 
 	View("paging", func() {
 		Attribute("hackers")
+		Attribute("pager")
 	})
 
 	View("tiny", func() {
