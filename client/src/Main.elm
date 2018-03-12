@@ -1,10 +1,12 @@
 module Main exposing (..)
 
-import Data.Hacker exposing (Hacker, new)
-import Html exposing (Html, h1, li, section, span, text, ul)
+import Data.Hacker exposing (Hacker, HackerWithPager, new)
+import Data.Pager exposing (Pager)
+import Html exposing (Html, div, h1, li, section, span, text, ul)
 import Http
 import Request.Hacker
 import Views.Form as Form
+import Views.Pager
 
 
 
@@ -12,6 +14,7 @@ import Views.Form as Form
 
 type alias Model =
     { hackers : List Hacker
+    , pager : Pager
     }
 
 
@@ -19,7 +22,8 @@ type alias Model =
 -- UPDATE
 
 type Msg
-    = FetchedHackers ( Result Http.Error ( List Hacker ) )
+    = FetchedHackers ( Result Http.Error HackerWithPager )
+    | PagerMsg Views.Pager.Msg
     | Post
     | Put
 
@@ -28,9 +32,10 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        FetchedHackers ( Ok hackers ) ->
+        FetchedHackers ( Ok hackerWithPager ) ->
             { model |
-                hackers = hackers
+                hackers = hackerWithPager.hackers
+                , pager = hackerWithPager.pager
             } ! []
 
         FetchedHackers ( Err err ) ->
@@ -38,6 +43,13 @@ update msg model =
                 hackers = []
             } ! []
 
+        PagerMsg subMsg ->
+            model !
+            [ subMsg
+                |> Views.Pager.update ( model.pager.currentPage, model.pager.totalPages )
+                |> Request.Hacker.page
+                |> Http.send FetchedHackers
+            ]
         Post ->
             model ! []
 
@@ -59,7 +71,20 @@ view model =
 
 drawView : Model -> List ( Html Msg )
 drawView model =
-    [ model.hackers
+    let
+        pager : Pager
+        pager =
+            model.pager
+
+        showPager : Html Msg
+        showPager =
+            if 1 |> (>) pager.totalPages then
+                pager.currentPage |> Views.Pager.view pager.totalPages |> Html.map PagerMsg
+            else
+                div [] []
+    in
+    [ showPager
+    , model.hackers
         |> List.map
             ( \hacker ->
                 li []
@@ -75,7 +100,8 @@ drawView model =
 init : ( Model, Cmd Msg )
 init =
     { hackers = []
-    } ! [ Request.Hacker.list |> Http.send FetchedHackers ]
+    , pager = Data.Pager.new
+    } ! [ 0 |> Request.Hacker.page |> Http.send FetchedHackers ]
 
 
 
