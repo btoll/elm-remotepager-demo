@@ -18,7 +18,7 @@ type alias Model =
     { action : Action
     , editing : Maybe Hacker
     , hackers : List Hacker
-    , pager : Pager
+    , pagerState : Pager
     }
 
 
@@ -31,7 +31,7 @@ init =
     { action = None
     , editing = Nothing
     , hackers = []
-    , pager = Data.Pager.new
+    , pagerState = Data.Pager.new
     } ! [ 0 |> Request.Hacker.page |> Http.send FetchedHackers ]
 
 
@@ -45,7 +45,7 @@ type Msg
     | Deleted ( Result Http.Error Hacker )
     | Edit Hacker
     | FetchedHackers ( Result Http.Error HackerWithPager )
-    | PagerMsg Views.Pager.Msg
+    | NewPage ( Maybe Int )
     | Post
     | Posted ( Result Http.Error Hacker )
     | Put
@@ -88,7 +88,7 @@ update msg model =
         FetchedHackers ( Ok hackerWithPager ) ->
             { model |
                 hackers = hackerWithPager.hackers
-                , pager = hackerWithPager.pager
+                , pagerState = hackerWithPager.pager
             } ! []
 
         FetchedHackers ( Err err ) ->
@@ -96,13 +96,14 @@ update msg model =
                 hackers = []
             } ! []
 
-        PagerMsg subMsg ->
+        NewPage page ->
             model !
-            [ subMsg
-                |> Views.Pager.update ( model.pager.currentPage, model.pager.totalPages )
+            [ page
+                |> Maybe.withDefault -1
                 |> Request.Hacker.page
                 |> Http.send FetchedHackers
             ]
+
         Post ->
             let
                 cmd =
@@ -178,10 +179,6 @@ view model =
 drawView : Model -> List ( Html Msg )
 drawView model =
     let
-        pager : Pager
-        pager =
-            model.pager
-
         editable =
             case model.editing of
                 Nothing ->
@@ -189,18 +186,11 @@ drawView model =
 
                 Just hacker ->
                     hacker
-
-        showPager : Html Msg
-        showPager =
-            if 1 |> (>) pager.totalPages then
-                pager.currentPage |> Views.Pager.view pager.totalPages |> Html.map PagerMsg
-            else
-                div [] []
     in
     case model.action of
         None ->
             [ button [ Add |> onClick ] [ "Add Hacker" |> text ]
-            , showPager
+            , model.pagerState |> Views.Pager.view NewPage               -- NewPage same as ( \page -> page |> NewPage )
             , model.hackers
                 |> List.map
                     ( \hacker ->
