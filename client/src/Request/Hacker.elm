@@ -5,12 +5,17 @@ import Data.Hacker exposing (Hacker, HackerWithPager, decoder, encoder, manyDeco
 
 
 
+baseUrl : String
+baseUrl =
+    "http://127.0.0.1:8080/elm-remotepager-demo/hacker/"
+
+
 delete : Hacker -> Http.Request Hacker
 delete hacker =
     Http.request
         { method = "DELETE"
         , headers = []
-        , url =  hacker.id |> toString |> (++) "http://127.0.0.1:8080/elm-remotepager-demo/hacker/"
+        , url =  hacker.id |> toString |> (++) baseUrl
         , body = Http.emptyBody
         , expect = Http.expectJson ( succeed hacker )
         , timeout = Nothing
@@ -21,7 +26,7 @@ delete hacker =
 get : String -> Http.Request ( List Hacker )
 get method =
     manyDecoder
-        |> Http.get ( (++) "http://127.0.0.1:8080/elm-remotepager-demo/hacker/" method )
+        |> Http.get ( (++) baseUrl method )
 
 
 list : Http.Request ( List Hacker )
@@ -31,7 +36,7 @@ list =
 
 page : Int -> Http.Request HackerWithPager
 page page =
-    pagingDecoder |> Http.get ( (++) "http://127.0.0.1:8080/elm-remotepager-demo/hacker/list/" ( page |> toString ) )
+    pagingDecoder |> Http.get ( baseUrl ++ "list/" ++ ( page |> toString ) )
 
 
 post : String -> Hacker -> Http.Request Hacker
@@ -43,7 +48,7 @@ post url hacker =
                 |> Http.jsonBody
     in
         decoder
-            |> Http.post "http://127.0.0.1:8080/elm-remotepager-demo/hacker/" body
+            |> Http.post baseUrl body
 
 
 put : String -> Hacker -> Http.Request Int
@@ -57,7 +62,7 @@ put url hacker =
         Http.request
             { method = "PUT"
             , headers = []
-            , url =  hacker.id |> toString |> (++) "http://127.0.0.1:8080/elm-remotepager-demo/hacker/"
+            , url =  hacker.id |> toString |> (++) baseUrl
             , body = body
             , expect = Http.expectJson ( hacker.id |> succeed )
             , timeout = Nothing

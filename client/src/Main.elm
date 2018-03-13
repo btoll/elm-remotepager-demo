@@ -3,6 +3,7 @@ module Main exposing (..)
 import Data.Hacker exposing (Hacker, HackerWithPager, new)
 import Data.Pager exposing (Pager)
 import Html exposing (Html, button, div, h1, li, section, span, text, ul)
+import Html.Events exposing (onClick)
 import Http
 import Request.Hacker
 import Views.Form as Form
@@ -22,7 +23,9 @@ type alias Model =
 -- UPDATE
 
 type Msg
-    = FetchedHackers ( Result Http.Error HackerWithPager )
+    = Delete Hacker
+    | Deleted ( Result Http.Error Hacker )
+    | FetchedHackers ( Result Http.Error HackerWithPager )
     | PagerMsg Views.Pager.Msg
     | Post
     | Put
@@ -32,6 +35,18 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Delete hacker ->
+            model ! [ hacker |> Request.Hacker.delete |> Http.send Deleted ]
+
+        Deleted ( Ok hacker ) ->
+            { model |
+                hackers =
+                    model.hackers |> List.filter ( \m -> hacker.id |> (/=) m.id )
+            } ! []
+
+        Deleted ( Err err ) ->
+            model ! []
+
         FetchedHackers ( Ok hackerWithPager ) ->
             { model |
                 hackers = hackerWithPager.hackers
@@ -92,7 +107,7 @@ drawView model =
                     [ span [] [ hacker.id |> toString |> text ]
                     , span [] [ hacker.name |> text ]
                     , button [] [ "Edit" |> text ]
-                    , button [] [ "Delete" |> text ]
+                    , button [ hacker |> Delete |> onClick ] [ "Delete" |> text ]
                     ]
             )
         |> ul []
