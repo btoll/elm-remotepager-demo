@@ -22,7 +22,7 @@ type alias Model =
     }
 
 
-type Action = None | Editing
+type Action = None | Adding | Editing
 
 
 
@@ -39,13 +39,15 @@ init =
 -- UPDATE
 
 type Msg
-    = Cancel
+    = Add
+    | Cancel
     | Delete Hacker
     | Deleted ( Result Http.Error Hacker )
     | Edit Hacker
     | FetchedHackers ( Result Http.Error HackerWithPager )
     | PagerMsg Views.Pager.Msg
     | Post
+    | Posted ( Result Http.Error Hacker )
     | Put
     | Putted ( Result Http.Error Hacker )
     | SetFormValue ( String -> Hacker ) String
@@ -54,6 +56,11 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Add ->
+            { model |
+                action = Adding
+            } ! []
+
         Cancel ->
             { model |
                 action = None
@@ -97,7 +104,31 @@ update msg model =
                 |> Http.send FetchedHackers
             ]
         Post ->
-            model ! []
+            let
+                cmd =
+                    case model.editing of
+                        Nothing ->
+                            Cmd.none
+
+                        Just hacker ->
+                            Request.Hacker.post hacker
+                                |> Http.send Posted
+            in
+            model ! [ cmd ]
+
+        Posted ( Ok hacker ) ->
+            { model |
+                action = None
+                , editing = Nothing
+                , hackers =
+                    model.hackers |> (::) hacker
+            } ! []
+
+        Posted ( Err err ) ->
+            { model |
+                action = None
+                , editing = Nothing
+            } ! []
 
         Put ->
             let
@@ -168,7 +199,7 @@ drawView model =
     in
     case model.action of
         None ->
-            [ button [] [ "Add Hacker" |> text ]
+            [ button [ Add |> onClick ] [ "Add Hacker" |> text ]
             , showPager
             , model.hackers
                 |> List.map
@@ -181,6 +212,18 @@ drawView model =
                             ]
                     )
                 |> ul []
+            ]
+
+        Adding ->
+            [ form [ onSubmit Post ]
+                [ Form.text "Name"
+                    [ value editable.name
+                    , onInput ( SetFormValue ( \v -> { editable | name = v } ) )
+                    , autofocus True
+                    ]
+                    []
+                , Form.submit False Cancel
+                ]
             ]
 
         Editing ->
