@@ -2,8 +2,9 @@ module Main exposing (..)
 
 import Data.Hacker exposing (Hacker, HackerWithPager, new)
 import Data.Pager exposing (Pager)
-import Html exposing (Html, button, div, h1, li, section, span, text, ul)
-import Html.Events exposing (onClick)
+import Html exposing (Html, button, div, form, h1, li, section, span, text, ul)
+import Html.Attributes exposing (autofocus, disabled, value)
+import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Request.Hacker
 import Views.Form as Form
@@ -14,27 +15,51 @@ import Views.Pager
 -- MODEL
 
 type alias Model =
-    { hackers : List Hacker
+    { action : Action
+    , editing : Maybe Hacker
+    , hackers : List Hacker
     , pager : Pager
     }
+
+
+type Action = None | Editing
+
+
+
+init : ( Model, Cmd Msg )
+init =
+    { action = None
+    , editing = Nothing
+    , hackers = []
+    , pager = Data.Pager.new
+    } ! [ 0 |> Request.Hacker.page |> Http.send FetchedHackers ]
 
 
 
 -- UPDATE
 
 type Msg
-    = Delete Hacker
+    = Cancel
+    | Delete Hacker
     | Deleted ( Result Http.Error Hacker )
+    | Edit Hacker
     | FetchedHackers ( Result Http.Error HackerWithPager )
     | PagerMsg Views.Pager.Msg
     | Post
     | Put
-
+    | Putted ( Result Http.Error Hacker )
+    | SetFormValue ( String -> Hacker ) String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Cancel ->
+            { model |
+                action = None
+                , editing = Nothing
+            } ! []
+
         Delete hacker ->
             model ! [ hacker |> Request.Hacker.delete |> Http.send Deleted ]
 
@@ -46,6 +71,12 @@ update msg model =
 
         Deleted ( Err err ) ->
             model ! []
+
+        Edit hacker ->
+            { model |
+                action = Editing
+                , editing = hacker |> Just
+            } ! []
 
         FetchedHackers ( Ok hackerWithPager ) ->
             { model |
@@ -69,7 +100,36 @@ update msg model =
             model ! []
 
         Put ->
-            model ! []
+            let
+                cmd =
+                    case model.editing of
+                        Nothing ->
+                            Cmd.none
+
+                        Just hacker ->
+                            Request.Hacker.put hacker
+                                |> Http.send Putted
+            in
+            model ! [ cmd ]
+
+        Putted ( Ok hacker ) ->
+            { model |
+                action = None
+                , editing = Nothing
+                , hackers =
+                    model.hackers |> List.filter ( \m -> hacker.id |> (/=) m.id ) |> (::) hacker
+            } ! []
+
+        Putted ( Err err ) ->
+            { model |
+                action = None
+                , editing = Nothing
+            } ! []
+
+        SetFormValue setFormValue s ->
+            { model |
+                editing = Just ( setFormValue s )
+            } ! []
 
 
 
@@ -91,6 +151,14 @@ drawView model =
         pager =
             model.pager
 
+        editable =
+            case model.editing of
+                Nothing ->
+                    new
+
+                Just hacker ->
+                    hacker
+
         showPager : Html Msg
         showPager =
             if 1 |> (>) pager.totalPages then
@@ -98,28 +166,39 @@ drawView model =
             else
                 div [] []
     in
-    [ button [] [ "Add Hacker" |> text ]
-    , showPager
-    , model.hackers
-        |> List.map
-            ( \hacker ->
-                li []
-                    [ span [] [ hacker.id |> toString |> text ]
-                    , span [] [ hacker.name |> text ]
-                    , button [] [ "Edit" |> text ]
-                    , button [ hacker |> Delete |> onClick ] [ "Delete" |> text ]
+    case model.action of
+        None ->
+            [ button [] [ "Add Hacker" |> text ]
+            , showPager
+            , model.hackers
+                |> List.map
+                    ( \hacker ->
+                        li []
+                            [ span [] [ hacker.id |> toString |> text ]
+                            , span [] [ hacker.name |> text ]
+                            , button [ hacker |> Edit |> onClick ] [ "Edit" |> text ]
+                            , button [ hacker |> Delete |> onClick ] [ "Delete" |> text ]
+                            ]
+                    )
+                |> ul []
+            ]
+
+        Editing ->
+            [ form [ onSubmit Put ]
+                [ Form.text "ID"
+                    [ editable.id |> toString |> value
+                    , disabled True
                     ]
-            )
-        |> ul []
-    ]
-
-
-
-init : ( Model, Cmd Msg )
-init =
-    { hackers = []
-    , pager = Data.Pager.new
-    } ! [ 0 |> Request.Hacker.page |> Http.send FetchedHackers ]
+                    []
+                , Form.text "Name"
+                    [ value editable.name
+                    , onInput ( SetFormValue ( \v -> { editable | name = v } ) )
+                    , autofocus True
+                    ]
+                    []
+                , Form.submit False Cancel
+                ]
+            ]
 
 
 

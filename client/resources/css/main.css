@@ -16,3 +16,18 @@ button {
     margin: 0 10px;
 }
 
+form div label {
+    display: inline-block;
+    margin: 10px;
+    text-align: right;
+    width: 50px;
+}
+
+form > div:last-child {
+    margin: 10px 0 0 70px;
+}
+
+form > div:last-child > input {
+    margin-right: 10px;
+}
+

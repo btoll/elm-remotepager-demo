@@ -39,8 +39,8 @@ page page =
     pagingDecoder |> Http.get ( baseUrl ++ "list/" ++ ( page |> toString ) )
 
 
-post : String -> Hacker -> Http.Request Hacker
-post url hacker =
+post : Hacker -> Http.Request Hacker
+post hacker =
     let
         body : Http.Body
         body =
@@ -51,8 +51,8 @@ post url hacker =
             |> Http.post baseUrl body
 
 
-put : String -> Hacker -> Http.Request Int
-put url hacker =
+put : Hacker -> Http.Request Hacker
+put hacker =
     let
         body : Http.Body
         body =
@@ -64,7 +64,7 @@ put url hacker =
             , headers = []
             , url =  hacker.id |> toString |> (++) baseUrl
             , body = body
-            , expect = Http.expectJson ( hacker.id |> succeed )
+            , expect = Http.expectJson ( hacker |> succeed )
             , timeout = Nothing
             , withCredentials = False
             }
